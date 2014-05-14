@@ -10,4 +10,5 @@ ECS 240 Project
 + Some useful links:
 	- [PDE](http://www.eclipse.org/pde/)
 	- [插件开发](http://www.cnblogs.com/liuzhuo/category/257208.html)
+	- [plugin development tutorial](http://www.vogella.com/tutorials/EclipsePlugIn/article.html)
 	- [Elclipse中安装PyDev步骤] (http://www.cnblogs.com/Realh/archive/2010/10/10/1847251.html)
