@@ -13,4 +13,4 @@ ECS 240 Project
 	- [plugin development tutorial](http://www.vogella.com/tutorials/EclipsePlugIn/article.html)
 	- [Elclipse中安装PyDev步骤] (http://www.cnblogs.com/Realh/archive/2010/10/10/1847251.html)
 	- [SWT Drag and Drop(DND)](http://www.eclipse.org/articles/Article-SWT-DND/DND-in-SWT.html)
-	- [SWT DND 小例子]http://blog.sina.com.cn/s/blog_603c271401015d1d.html
+	- [SWT DND 小例子](http://blog.sina.com.cn/s/blog_603c271401015d1d.html)
