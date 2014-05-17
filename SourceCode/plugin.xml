@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+<!---
+   <extension
+         point="org.eclipse.ui.views">
+      <category
+            name="PyDev"
+            id="ECS240">
+      </category>
+      <view
+            name="DragTargetView"
+            icon="icons/sample.gif"
+            category="ECS240"
+            class="ecs240.views.DragTargetView"
+            id="ecs240.views.DragTargetView">
+      </view>
+   </extension>
+-->
+   <extension
+         point="org.eclipse.ui.views">
+      <category
+            name="PyDev"
+            id="ECS240">
+      </category>
+      <view
+            name="Topology Editor"
+            icon="icons/sample.gif"
+            category="ECS240"
+            class="ecs240.views.TopologyEditorView"
+            id="ecs240.views.TopologyEditorView">
+      </view>
+   </extension>
+   
+   <extension
+         point="org.eclipse.ui.perspectiveExtensions">
+      <perspectiveExtension
+            targetID="org.python.pydev.ui.PythonPerspective">
+         <view
+               ratio="0.5"
+               relative="org.eclipse.ui.views.ProblemView"
+               relationship="top"
+               id="ecs240.views.DragSourceView">
+         </view>
+         <view
+               ratio="0.5"
+               relative="org.eclipse.ui.views.ProblemView"
+               relationship="top"
+               id="ecs240.views.DragTargetView">
+         </view>
+      </perspectiveExtension>
+   </extension>
+   
+   <extension
+         point="org.eclipse.help.contexts">
+      <contexts
+            file="contexts.xml">
+      </contexts>
+   </extension>
+
+</plugin>
