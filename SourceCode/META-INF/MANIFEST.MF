@@ -5,7 +5,8 @@ Bundle-SymbolicName: ECS240; singleton:=true
 Bundle-Version: 1.0.0.qualifier
 Bundle-Activator: ecs240.Activator
 Require-Bundle: org.eclipse.ui,
- org.eclipse.core.runtime
+ org.eclipse.core.runtime,
+ org.python.pydev;bundle-version="3.4.1"
 Bundle-ActivationPolicy: lazy
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Import-Package: org.eclipse.ui.forms.widgets

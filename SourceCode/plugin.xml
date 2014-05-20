@@ -21,12 +21,12 @@
          point="org.eclipse.ui.views">
       <category
             name="PyDev"
-            id="ECS240">
+            id="org.python.pydev">
       </category>
       <view
             name="Topology Editor"
             icon="icons/sample.gif"
-            category="ECS240"
+            category="org.python.pydev"
             class="ecs240.views.TopologyEditorView"
             id="ecs240.views.TopologyEditorView">
       </view>
