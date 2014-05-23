@@ -334,6 +334,7 @@ public class TopologyEditorView extends ViewPart {
 						dgSrc.setTransfer(new Transfer[] { textTransfer });
 						dgSrc.addDragListener(new NetworkNodeDragListener());
 						label.addMouseListener(new NetworkNodeMouseListener());
+						targetArea.redraw();
 					}
 				}
 				break;
