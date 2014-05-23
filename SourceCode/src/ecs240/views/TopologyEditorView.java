@@ -2,6 +2,7 @@ package ecs240.views;
 
 import java.util.ArrayList;
 
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.*;
 import org.eclipse.ui.forms.widgets.Form;
 import org.eclipse.ui.forms.widgets.FormToolkit;
@@ -16,12 +17,14 @@ import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.Shell;
 
 import org.eclipse.swt.dnd.*;
 import org.eclipse.swt.events.MouseEvent;
@@ -210,6 +213,12 @@ public class TopologyEditorView extends ViewPart {
 
 	class NetworkNodeMouseListener implements MouseListener {
 		public void mouseDoubleClick(MouseEvent e) {
+			if (e.widget instanceof Label) {
+				focusingLabel = (Label) e.widget;
+				AttributeEditingDialog dialog = new AttributeEditingDialog(
+						focusingLabel.getText());
+				dialog.open();
+			}
 		}
 
 		public void mouseDown(MouseEvent e) {
@@ -338,6 +347,7 @@ public class TopologyEditorView extends ViewPart {
 					Edge edge = (Edge) e.data;
 					gc = new GC(targetArea, SWT.NONE);
 					drawLine(gc, edge.getStartPoint(), edge.getEndPoint());
+					targetArea.redraw();
 					gc.dispose();
 				}
 				break;
