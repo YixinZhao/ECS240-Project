@@ -7,6 +7,7 @@ import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
 import ecs240.datas.Model;
+import ecs240.datas.Utility;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -18,10 +19,6 @@ public class Activator extends AbstractUIPlugin {
 
 	// The shared instance
 	private static Activator plugin;
-
-	public static final String switchIcon = "icons/switch.jpg";
-	public static final String serverIcon = "icons/server.jpg";
-	public static final String clientIcon = "icons/client.jpg";
 
 	/**
 	 * The constructor
@@ -41,9 +38,9 @@ public class Activator extends AbstractUIPlugin {
 		plugin = this;
 
 		ImageRegistry ir = plugin.getImageRegistry();
-		ir.put(Model.SWITCH, Activator.getImageDescriptor(switchIcon));
-		ir.put(Model.SERVER, Activator.getImageDescriptor(serverIcon));
-		ir.put(Model.CLIENT, Activator.getImageDescriptor(clientIcon));
+		ir.put(Utility.SWITCH, Activator.getImageDescriptor(Utility.switchIcon));
+		ir.put(Utility.SERVER, Activator.getImageDescriptor(Utility.serverIcon));
+		ir.put(Utility.CLIENT, Activator.getImageDescriptor(Utility.clientIcon));
 	}
 
 	/*
@@ -86,15 +83,12 @@ public class Activator extends AbstractUIPlugin {
 			Image img = plugin.getImageRegistry().get(name);
 			if (img == null) {
 				ImageDescriptor desc;
-				if (name.equalsIgnoreCase(Model.SWITCH)) {
-					desc = Activator
-							.getImageDescriptor(switchIcon);
-				} else if (name.equalsIgnoreCase(Model.SERVER)) {
-					desc = Activator
-							.getImageDescriptor(serverIcon);
-				} else if (name.equalsIgnoreCase(Model.CLIENT)) {
-					desc = Activator
-							.getImageDescriptor(clientIcon);
+				if (name.equalsIgnoreCase(Utility.SWITCH)) {
+					desc = Activator.getImageDescriptor(Utility.switchIcon);
+				} else if (name.equalsIgnoreCase(Utility.SERVER)) {
+					desc = Activator.getImageDescriptor(Utility.serverIcon);
+				} else if (name.equalsIgnoreCase(Utility.CLIENT)) {
+					desc = Activator.getImageDescriptor(Utility.clientIcon);
 				} else {
 					return null;
 				}

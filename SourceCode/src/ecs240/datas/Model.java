@@ -5,24 +5,19 @@ import java.util.Hashtable;
 
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 
 import ecs240.views.TopologyEditorView.ModelChangeEventListener;
 
 public class Model {
-	public static final int TYPE_INVALID = 0;
-	public static final int TYPE_SWITCH = 1;
-	public static final int TYPE_SERVER = 2;
-	public static final int TYPE_CLIENT = 3;
-
-	public static final String SWITCH = "switch";
-	public static final String SERVER = "server";
-	public static final String CLIENT = "client";
 
 	private Hashtable<String, Node> nodes;// table of node id and node
 											// instance mapping
 	private ArrayList<Edge> edges; // list of edges
+
+	private int switchCount;
+	private int clientCount;
+	private int serverCount;
 
 	private ArrayList<ModelChangeEventListener> listener;
 
@@ -30,6 +25,9 @@ public class Model {
 		nodes = new Hashtable<String, Node>();
 		edges = new ArrayList<Edge>();
 		listener = new ArrayList<ModelChangeEventListener>();
+		switchCount = 0;
+		clientCount = 0;
+		serverCount = 0;
 	}
 
 	public void addModelListener(ModelChangeEventListener l) {
@@ -40,30 +38,37 @@ public class Model {
 		listener.remove(l);
 	}
 
-	public void notifyModelListener() {
+	public void notifyModelListener(ModelChangeEvent e) {
 		for (Listener l : listener) {
-			l.handleEvent(new Event());
+			l.handleEvent(e);
 		}
 	}
 
-	public void insertNode(String id, int type, int x, int y) {
-		if (type != Model.TYPE_INVALID) {
-			// check if node already exist
-			if (isNodeExist(id)) {
-				updateNode(id, type, x, y);
-			} else {
-				Node nd = new Node(type, id, x, y);
-				nodes.put(id, nd);
-			}
-			notifyModelListener();
+	public void insertNode(String string, int x, int y) {
+		ModelChangeEvent e = new ModelChangeEvent();
+
+		if (isNodeExist(string)) {// check if node already exist
+			updateNode(string, x, y);
+			e.eventType = Utility.EVENT_UPDATE_NODE;
+			e.data = getNodeByID(string);
+
+		} else {// new node
+			String id = generateNodeID(string);
+			Node nd = new Node(id, x, y);
+			System.out.println("newNode:" + id + ";" + x + ";" + y);
+			nodes.put(id, nd);
+			e.eventType = Utility.EVENT_NEW_NODE;
+			e.data = nd;
 		}
+
+		notifyModelListener(e);
 	}
 
 	public boolean isNodeExist(String id) {
 		return nodes.containsKey(id);
 	}
 
-	public void updateNode(String id, int type, int x, int y) {
+	public void updateNode(String id, int x, int y) {
 		System.out.println("updateNode:" + id + ";" + x + ";" + y);
 		Node nd = nodes.get(id);
 		nd.SetNodeCoordinates(x, y);
@@ -80,7 +85,7 @@ public class Model {
 			Point endpt) {
 		insertEdge(startNode.getNodeID(), endNode.getNodeID(), startpt, endpt);
 	}
-	
+
 	public boolean insertEdge(String startNode, String endNode, Point startpt,
 			Point endpt) {
 
@@ -97,6 +102,11 @@ public class Model {
 				+ startpt + "end:" + endNode + ";" + endpt);
 		Edge edge = new Edge(startNode, endNode, startpt, endpt);
 		edges.add(edge);
+
+		ModelChangeEvent e = new ModelChangeEvent();
+		e.eventType = Utility.EVENT_NEW_EDGE;
+		e.data = edge;
+		notifyModelListener(e);
 		return true;// return true when new edge
 	}
 
@@ -108,4 +118,29 @@ public class Model {
 		return nodes.get(id);
 	}
 
+	public String generateNodeID(String str) {
+		String text = str;
+		switch (Utility.getTypeFromID(str)) {
+		case Utility.TYPE_CLIENT: {
+			text = str + clientCount;
+			clientCount++;
+			break;
+		}
+		case Utility.TYPE_SERVER: {
+			text = str + serverCount;
+			serverCount++;
+			break;
+		}
+		case Utility.TYPE_SWITCH: {
+			text = str + switchCount;
+			switchCount++;
+			break;
+		}
+		}
+		return text;
+	}
+
+	public class ModelChangeEvent extends Event {
+		public int eventType = Utility.EVENT_INVALID;
+	}
 }

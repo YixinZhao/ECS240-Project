@@ -32,6 +32,9 @@ import org.eclipse.swt.events.PaintListener;
 import ecs240.Activator;
 import ecs240.datas.Model;
 import ecs240.datas.Edge;
+import ecs240.datas.Model.ModelChangeEvent;
+import ecs240.datas.Node;
+import ecs240.datas.Utility;
 
 public class TopologyEditorView extends ViewPart {
 
@@ -40,9 +43,6 @@ public class TopologyEditorView extends ViewPart {
 	 */
 	public static final String ID = "ecs240.views.TopologyEditorView";
 
-	private int switchCount;
-	private int clientCount;
-	private int serverCount;
 	private Display display;
 	private FormToolkit toolkit;
 	private Form form;
@@ -73,9 +73,6 @@ public class TopologyEditorView extends ViewPart {
 	 */
 	public TopologyEditorView() {
 		isDrawingEdge = false;
-		switchCount = 0;
-		serverCount = 0;
-		clientCount = 0;
 		model = new Model();
 		modelListener = new ModelChangeEventListener();
 		model.addModelListener(modelListener);
@@ -107,8 +104,8 @@ public class TopologyEditorView extends ViewPart {
 		// create source list
 		sourceList = new List(sourceArea, SWT.SINGLE | SWT.BORDER
 				| SWT.V_SCROLL);
-		sourceList.setItems(new String[] { Model.SWITCH, Model.SERVER,
-				Model.CLIENT });
+		sourceList.setItems(new String[] { Utility.SWITCH, Utility.SERVER,
+				Utility.CLIENT });
 		sourceList.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true,
 				1, 1));
 		sourceSection.setClient(sourceArea);
@@ -177,30 +174,8 @@ public class TopologyEditorView extends ViewPart {
 	class SourceListMouseListener implements MouseListener {
 		public void mouseDoubleClick(MouseEvent e) {
 			// double click on the list item, create a instance on the topology.
-
 			String itemSelected = sourceList.getSelection()[0];
-			Image image = getImageByKey(itemSelected);
-			if (image != null) {
-				Label label = new Label(targetArea, SWT.NONE);
-
-				FormData data = new FormData();
-				// put created label to up left position of the target area.
-				data.top = new FormAttachment(targetArea, 10, SWT.TOP);
-				data.left = new FormAttachment(targetArea, 10, SWT.LEFT);
-				label.setLayoutData(data);
-
-				String id = generateNodeID(itemSelected);
-				label.setText(id);
-				label.setImage(image);
-				targetArea.layout(true);
-				model.insertNode(id, getTypeFromID(id), 0, 0);
-
-				// define drag operation for this label and add listner
-				DragSource dgSrc = new DragSource(label, DND.DROP_MOVE);
-				dgSrc.setTransfer(new Transfer[] { textTransfer });
-				dgSrc.addDragListener(new NetworkNodeDragListener());
-				label.addMouseListener(new NetworkNodeMouseListener());
-			}
+			model.insertNode(itemSelected, 10, 10);
 		}
 
 		public void mouseDown(MouseEvent e) {
@@ -239,8 +214,6 @@ public class TopologyEditorView extends ViewPart {
 
 		public void mouseDown(MouseEvent e) {
 			if (e.widget instanceof Label) {
-				System.out.println("mouseDown:" + e.button + ";" + e.stateMask
-						+ ";" + e.widget);
 				focusingLabel = (Label) e.widget;
 				if (e.button == 3) {// right button start draw edge
 					if (!isDrawingEdge) {
@@ -252,12 +225,8 @@ public class TopologyEditorView extends ViewPart {
 						edgeEndLabel = focusingLabel;
 						endPt = display
 								.map(focusingLabel, targetArea, e.x, e.y);
-						if (model.insertEdge(edgeStartLabel.getText(),
-								edgeEndLabel.getText(), startPt, endPt)) {
-							gc = new GC(targetArea, SWT.NONE);
-							drawLine(gc, startPt, endPt);
-							gc.dispose();
-						}
+						model.insertEdge(edgeStartLabel.getText(),
+								edgeEndLabel.getText(), startPt, endPt);
 						isDrawingEdge = false;
 					}
 
@@ -291,7 +260,6 @@ public class TopologyEditorView extends ViewPart {
 					break;
 				}
 			}
-			// System.out.println("detail:" + event.detail);
 		}
 
 		public void dragOver(DropTargetEvent event) {
@@ -321,50 +289,61 @@ public class TopologyEditorView extends ViewPart {
 		public void drop(DropTargetEvent event) {
 			if (textTransfer.isSupportedType(event.currentDataType)) {
 				String string = (String) (event.data);
-				Image image;
-				image = getImageByKey(string);
-				if (image != null) {
-					Label label = new Label(targetArea, SWT.NONE);
 
-					Point pt = display.map(null, targetArea, event.x, event.y);
-					FormData data = new FormData();
-					data.top = new FormAttachment(targetArea, pt.y, SWT.TOP);
-					data.left = new FormAttachment(targetArea, pt.x, SWT.LEFT);
-					label.setLayoutData(data);
-
-					if (model.isNodeExist(string)) {
-						label.setText(string);
-						model.insertNode(string, getTypeFromID(string), pt.x,
-								pt.y);
-					} else {
-						String id = generateNodeID(string);
-						label.setText(id);
-						model.insertNode(id, getTypeFromID(string), pt.x, pt.y);
-					}
-
-					label.setImage(image);
-					targetArea.layout(true);
-
-					// define drag operation for this label and add listner
-					DragSource dgSrc = new DragSource(label, DND.DROP_MOVE);
-					dgSrc.setTransfer(new Transfer[] { TextTransfer
-							.getInstance() });
-					dgSrc.addDragListener(new NetworkNodeDragListener());
-					label.addMouseListener(new NetworkNodeMouseListener());
-
-				}
+				Point pt = display.map(null, targetArea, event.x, event.y);
+				model.insertNode(string, pt.x, pt.y);
 			}
+
 		}
 	}
 
 	public class ModelChangeEventListener implements Listener {
 
 		public void handleEvent(Event event) {
-			System.out.println("ModelChangeEventListener");
-			// targetArea.redraw();
-			// redrawLines();
-		}
+			ModelChangeEvent e = (ModelChangeEvent) event;
+			System.out.println("ModelChangeEventListener,e:" + e.eventType);
+			switch (e.eventType) {
+			case Utility.EVENT_NEW_NODE:
+			case Utility.EVENT_UPDATE_NODE: {
+				if (e.data instanceof Node) {
+					Node nd = (Node) e.data;
+					System.out.println("nd, id:" + nd.getNodeID() + ", xy:"
+							+ nd.getNodeCoordinates());
+					Image image;
+					image = getImageByKey(nd.getNodeID());
+					Point pt = nd.getNodeCoordinates();
+					if (image != null) {
+						Label label = new Label(targetArea, SWT.NONE);
 
+						FormData data = new FormData();
+						data.top = new FormAttachment(targetArea, pt.y, SWT.TOP);
+						data.left = new FormAttachment(targetArea, pt.x,
+								SWT.LEFT);
+						label.setLayoutData(data);
+						label.setText(nd.getNodeID());
+						label.setImage(image);
+						targetArea.layout(true);
+
+						DragSource dgSrc = new DragSource(label, DND.DROP_MOVE);
+						dgSrc.setTransfer(new Transfer[] { textTransfer });
+						dgSrc.addDragListener(new NetworkNodeDragListener());
+						label.addMouseListener(new NetworkNodeMouseListener());
+					}
+				}
+				break;
+			}
+
+			case Utility.EVENT_NEW_EDGE: {
+				if (e.data instanceof Edge) {
+					Edge edge = (Edge) e.data;
+					gc = new GC(targetArea, SWT.NONE);
+					drawLine(gc, edge.getStartPoint(), edge.getEndPoint());
+					gc.dispose();
+				}
+				break;
+			}
+			}
+		}
 	}
 
 	/**
@@ -379,51 +358,17 @@ public class TopologyEditorView extends ViewPart {
 		if (key.length() == 0) {
 			return null;
 		}
-		if (key.startsWith(Model.SWITCH)) {
-			image = Activator.getImage(Model.SWITCH);
-		} else if (key.startsWith(Model.SERVER)) {
-			image = Activator.getImage(Model.SERVER);
-		} else if (key.startsWith(Model.CLIENT)) {
-			image = Activator.getImage(Model.CLIENT);
+		if (key.startsWith(Utility.SWITCH)) {
+			image = Activator.getImage(Utility.SWITCH);
+		} else if (key.startsWith(Utility.SERVER)) {
+			image = Activator.getImage(Utility.SERVER);
+		} else if (key.startsWith(Utility.CLIENT)) {
+			image = Activator.getImage(Utility.CLIENT);
 		} else {
 			System.out.println("Wrong key, return");
 			return null;
 		}
 		return image;
-	}
-
-	public int getTypeFromID(String text) {
-		int type = Model.TYPE_INVALID;
-		if (text.startsWith(Model.SWITCH)) {
-			type = Model.TYPE_SWITCH;
-		} else if (text.startsWith(Model.SERVER)) {
-			type = Model.TYPE_SERVER;
-		} else if (text.startsWith(Model.CLIENT)) {
-			type = Model.TYPE_CLIENT;
-		}
-		return type;
-	}
-
-	public String generateNodeID(String str) {
-		String text = str;
-		switch (getTypeFromID(str)) {
-		case Model.TYPE_CLIENT: {
-			text = str + clientCount;
-			clientCount++;
-			break;
-		}
-		case Model.TYPE_SERVER: {
-			text = str + serverCount;
-			serverCount++;
-			break;
-		}
-		case Model.TYPE_SWITCH: {
-			text = str + switchCount;
-			switchCount++;
-			break;
-		}
-		}
-		return text;
 	}
 
 	public void drawLine(GC gc, Point start, Point end) {

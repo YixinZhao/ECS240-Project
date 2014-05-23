@@ -4,18 +4,17 @@ import org.eclipse.swt.graphics.Point;
 
 public class Node {
 
-	private int nodeType;
 	private String nodeID;
 	private int x; // x coordinates corresponding to targetArea;
 	private int y; // y coordinates corresponding to targetArea;
 
 	Node() {
-		nodeType = Model.TYPE_INVALID;
 	}
 
-	Node(int type, String id, int x, int y) {
+	Node(String id, int x, int y) {
 		nodeID = id;
-		nodeType = type;
+		this.x = x;
+		this.y = y;
 	}
 
 	public void setNodeID(String id) {
@@ -37,7 +36,7 @@ public class Node {
 	}
 
 	public int getNodeType() {
-		return nodeType;
+		return Utility.getTypeFromID(nodeID);
 	}
 
 	public Point getNodeCoordinates() {
