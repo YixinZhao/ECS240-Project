@@ -27,6 +27,7 @@
             name="Topology Editor"
             icon="icons/sample.gif"
             category="org.python.pydev"
+            allowMultiple="false"
             class="ecs240.views.TopologyEditorView"
             id="ecs240.views.TopologyEditorView">
       </view>

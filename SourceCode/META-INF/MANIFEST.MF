@@ -8,4 +8,10 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime
 Bundle-ActivationPolicy: lazy
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
-Import-Package: org.eclipse.ui.forms.widgets
+Import-Package: org.eclipse.draw2d,
+ org.eclipse.draw2d.geometry,
+ org.eclipse.draw2d.graph,
+ org.eclipse.gef,
+ org.eclipse.gef.editparts,
+ org.eclipse.gef.ui.parts,
+ org.eclipse.ui.forms.widgets

@@ -1,15 +1,12 @@
 package ecs240;
 
-import java.util.MissingResourceException;
-
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
-import ecs240.views.TopologyEditorView;
+import ecs240.datas.Model;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -21,6 +18,10 @@ public class Activator extends AbstractUIPlugin {
 
 	// The shared instance
 	private static Activator plugin;
+
+	public static final String switchIcon = "icons/switch.jpg";
+	public static final String serverIcon = "icons/server.jpg";
+	public static final String clientIcon = "icons/client.jpg";
 
 	/**
 	 * The constructor
@@ -40,12 +41,9 @@ public class Activator extends AbstractUIPlugin {
 		plugin = this;
 
 		ImageRegistry ir = plugin.getImageRegistry();
-		ir.put(TopologyEditorView.SWITCH,
-				Activator.getImageDescriptor(TopologyEditorView.switchIcon));
-		ir.put(TopologyEditorView.SERVER,
-				Activator.getImageDescriptor(TopologyEditorView.serverIcon));
-		ir.put(TopologyEditorView.CLIENT,
-				Activator.getImageDescriptor(TopologyEditorView.clientIcon));
+		ir.put(Model.SWITCH, Activator.getImageDescriptor(switchIcon));
+		ir.put(Model.SERVER, Activator.getImageDescriptor(serverIcon));
+		ir.put(Model.CLIENT, Activator.getImageDescriptor(clientIcon));
 	}
 
 	/*
@@ -88,15 +86,15 @@ public class Activator extends AbstractUIPlugin {
 			Image img = plugin.getImageRegistry().get(name);
 			if (img == null) {
 				ImageDescriptor desc;
-				if (name.equalsIgnoreCase(TopologyEditorView.SWITCH)) {
+				if (name.equalsIgnoreCase(Model.SWITCH)) {
 					desc = Activator
-							.getImageDescriptor(TopologyEditorView.switchIcon);
-				} else if (name.equalsIgnoreCase(TopologyEditorView.SERVER)) {
+							.getImageDescriptor(switchIcon);
+				} else if (name.equalsIgnoreCase(Model.SERVER)) {
 					desc = Activator
-							.getImageDescriptor(TopologyEditorView.serverIcon);
-				} else if (name.equalsIgnoreCase(TopologyEditorView.CLIENT)) {
+							.getImageDescriptor(serverIcon);
+				} else if (name.equalsIgnoreCase(Model.CLIENT)) {
 					desc = Activator
-							.getImageDescriptor(TopologyEditorView.clientIcon);
+							.getImageDescriptor(clientIcon);
 				} else {
 					return null;
 				}
