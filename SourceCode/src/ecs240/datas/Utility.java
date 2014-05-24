@@ -1,6 +1,7 @@
 package ecs240.datas;
 
-public final class Utility {
+public final class Utility {//general purpose usage
+
 
 	public static final int TYPE_INVALID = 0;
 	public static final int TYPE_SWITCH = 1;
