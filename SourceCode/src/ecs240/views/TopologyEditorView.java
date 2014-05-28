@@ -1,5 +1,7 @@
 package ecs240.views;
 
+import java.io.File;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 
 import org.eclipse.ui.part.*;
@@ -16,6 +18,7 @@ import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
@@ -28,6 +31,8 @@ import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.SelectionListener;
 
 import ecs240.Activator;
 import ecs240.datas.Model;
@@ -53,6 +58,7 @@ public class TopologyEditorView extends ViewPart {
 
 	private Section targetSection;
 	private Composite targetArea;
+	private Button button;
 	private GC gc;
 
 	private DragSource source;
@@ -73,7 +79,7 @@ public class TopologyEditorView extends ViewPart {
 	 */
 	public TopologyEditorView() {
 		isDrawingEdge = false;
-		model = new Model();
+		model = Activator.getModel();
 		modelListener = new ModelChangeEventListener();
 		model.addModelListener(modelListener);
 	}
@@ -101,11 +107,40 @@ public class TopologyEditorView extends ViewPart {
 		sourceArea = toolkit.createComposite(sourceSection, SWT.BORDER);
 		sourceArea.setLayout(new GridLayout());
 
-		// create source list
+		// create source area
+		button = toolkit.createButton(sourceArea, "Run", SWT.BORDER);
+		button.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		button.addSelectionListener(new SelectionListener() {
+			public void widgetSelected(SelectionEvent event) {
+				if (model.dumpToFile()) {
+					try {
+						ProcessBuilder pb = new ProcessBuilder().inheritIO();
+						//TODO: use relative path
+						pb.directory(new File(
+								"/home/yixin/workspace/ecs240/src/ecs240/views"));
+						pb.command("gksudo", "python", "MininetRunner.py");
+						Process p = pb.start();
+
+						InputStreamReader streamReader = new InputStreamReader(
+								p.getInputStream());
+						LogStreamReader reader = new LogStreamReader(
+								streamReader);
+						Thread thread = new Thread(reader, "LogStreamReader");
+						thread.start();
+					} catch (Exception e) {
+
+					}
+				}
+			}
+
+			public void widgetDefaultSelected(SelectionEvent event) {
+				this.widgetSelected(event);
+			}
+		});
 		sourceList = new List(sourceArea, SWT.SINGLE | SWT.BORDER
 				| SWT.V_SCROLL);
-		sourceList.setItems(new String[] { Utility.SWITCH, Utility.SERVER,
-				Utility.CLIENT });
+		sourceList.setItems(new String[] { Utility.SWITCH, Utility.HOST,
+				Utility.CONTROLLER });
 		sourceList.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true,
 				1, 1));
 		sourceSection.setClient(sourceArea);
@@ -307,14 +342,14 @@ public class TopologyEditorView extends ViewPart {
 
 		public void handleEvent(Event event) {
 			ModelChangeEvent e = (ModelChangeEvent) event;
-			System.out.println("ModelChangeEventListener,e:" + e.eventType);
+			// System.out.println("ModelChangeEventListener,e:" + e.eventType);
 			switch (e.eventType) {
 			case Utility.EVENT_NEW_NODE:
 			case Utility.EVENT_UPDATE_NODE: {
 				if (e.data instanceof Node) {
 					Node nd = (Node) e.data;
-					System.out.println("nd, id:" + nd.getNodeID() + ", xy:"
-							+ nd.getNodeCoordinates());
+					// System.out.println("nd, id:" + nd.getNodeID() + ", xy:"
+					// + nd.getNodeCoordinates());
 					Image image;
 					image = getImageByKey(nd.getNodeID());
 					Point pt = nd.getNodeCoordinates();
@@ -334,6 +369,7 @@ public class TopologyEditorView extends ViewPart {
 						dgSrc.setTransfer(new Transfer[] { textTransfer });
 						dgSrc.addDragListener(new NetworkNodeDragListener());
 						label.addMouseListener(new NetworkNodeMouseListener());
+						targetArea.redraw();
 					}
 				}
 				break;
@@ -367,12 +403,12 @@ public class TopologyEditorView extends ViewPart {
 		}
 		if (key.startsWith(Utility.SWITCH)) {
 			image = Activator.getImage(Utility.SWITCH);
-		} else if (key.startsWith(Utility.SERVER)) {
-			image = Activator.getImage(Utility.SERVER);
-		} else if (key.startsWith(Utility.CLIENT)) {
-			image = Activator.getImage(Utility.CLIENT);
+		} else if (key.startsWith(Utility.HOST)) {
+			image = Activator.getImage(Utility.HOST);
+		} else if (key.startsWith(Utility.CONTROLLER)) {
+			image = Activator.getImage(Utility.CONTROLLER);
 		} else {
-			System.out.println("Wrong key, return");
+			// System.out.println("Wrong key, return");
 			return null;
 		}
 		return image;
@@ -382,7 +418,7 @@ public class TopologyEditorView extends ViewPart {
 		if (gc == null || start == null || end == null) {
 			return;
 		}
-		gc.drawLine(start.x, start.y, end.x, end.y);
+		gc.drawLine(start.x + 15, start.y + 15, end.x + 15, end.y + 15);
 	}
 
 	public void redrawLines(GC gc) {

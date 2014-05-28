@@ -1,19 +1,19 @@
 package ecs240.datas;
 
-public final class Utility {
+public final class Utility {// general purpose usage
 
 	public static final int TYPE_INVALID = 0;
 	public static final int TYPE_SWITCH = 1;
-	public static final int TYPE_SERVER = 2;
-	public static final int TYPE_CLIENT = 3;
+	public static final int TYPE_HOST = 2;
+	public static final int TYPE_CONTROLLER = 3;
 
 	public static final String SWITCH = "switch";
-	public static final String SERVER = "server";
-	public static final String CLIENT = "client";
+	public static final String HOST = "host";
+	public static final String CONTROLLER = "controller";
 
 	public static final String switchIcon = "icons/switch.jpg";
-	public static final String serverIcon = "icons/server.jpg";
-	public static final String clientIcon = "icons/client.jpg";
+	public static final String hostIcon = "icons/host.jpg";
+	public static final String controllerIcon = "icons/controller.jpg";
 
 	public static final int EVENT_INVALID = 0;
 	public static final int EVENT_NEW_NODE = 1;
@@ -24,10 +24,10 @@ public final class Utility {
 		int type = TYPE_INVALID;
 		if (text.startsWith(SWITCH)) {
 			type = TYPE_SWITCH;
-		} else if (text.startsWith(SERVER)) {
-			type = TYPE_SERVER;
-		} else if (text.startsWith(CLIENT)) {
-			type = TYPE_CLIENT;
+		} else if (text.startsWith(HOST)) {
+			type = TYPE_HOST;
+		} else if (text.startsWith(CONTROLLER)) {
+			type = TYPE_CONTROLLER;
 		}
 		return type;
 	}

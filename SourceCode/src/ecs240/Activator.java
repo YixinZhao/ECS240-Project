@@ -20,6 +20,8 @@ public class Activator extends AbstractUIPlugin {
 	// The shared instance
 	private static Activator plugin;
 
+	private static Model model = new Model();
+
 	/**
 	 * The constructor
 	 */
@@ -39,8 +41,9 @@ public class Activator extends AbstractUIPlugin {
 
 		ImageRegistry ir = plugin.getImageRegistry();
 		ir.put(Utility.SWITCH, Activator.getImageDescriptor(Utility.switchIcon));
-		ir.put(Utility.SERVER, Activator.getImageDescriptor(Utility.serverIcon));
-		ir.put(Utility.CLIENT, Activator.getImageDescriptor(Utility.clientIcon));
+		ir.put(Utility.HOST, Activator.getImageDescriptor(Utility.hostIcon));
+		ir.put(Utility.CONTROLLER,
+				Activator.getImageDescriptor(Utility.controllerIcon));
 	}
 
 	/*
@@ -85,10 +88,10 @@ public class Activator extends AbstractUIPlugin {
 				ImageDescriptor desc;
 				if (name.equalsIgnoreCase(Utility.SWITCH)) {
 					desc = Activator.getImageDescriptor(Utility.switchIcon);
-				} else if (name.equalsIgnoreCase(Utility.SERVER)) {
-					desc = Activator.getImageDescriptor(Utility.serverIcon);
-				} else if (name.equalsIgnoreCase(Utility.CLIENT)) {
-					desc = Activator.getImageDescriptor(Utility.clientIcon);
+				} else if (name.equalsIgnoreCase(Utility.HOST)) {
+					desc = Activator.getImageDescriptor(Utility.hostIcon);
+				} else if (name.equalsIgnoreCase(Utility.HOST)) {
+					desc = Activator.getImageDescriptor(Utility.controllerIcon);
 				} else {
 					return null;
 				}
@@ -99,5 +102,9 @@ public class Activator extends AbstractUIPlugin {
 		} catch (Exception e) {
 		}
 		return null;
+	}
+
+	public static Model getModel() {
+		return model;
 	}
 }

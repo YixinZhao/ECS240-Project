@@ -1,13 +1,15 @@
 package ecs240.datas;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.Iterator;
 
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
-
-import ecs240.views.TopologyEditorView.ModelChangeEventListener;
 
 public class Model {
 
@@ -19,22 +21,22 @@ public class Model {
 	private int clientCount;
 	private int serverCount;
 
-	private ArrayList<ModelChangeEventListener> listener;
+	private ArrayList<Listener> listener;
 
 	public Model() {
 		nodes = new Hashtable<String, Node>();
 		edges = new ArrayList<Edge>();
-		listener = new ArrayList<ModelChangeEventListener>();
+		listener = new ArrayList<Listener>();
 		switchCount = 0;
 		clientCount = 0;
 		serverCount = 0;
 	}
 
-	public void addModelListener(ModelChangeEventListener l) {
+	public void addModelListener(Listener l) {
 		listener.add(l);
 	}
 
-	public void removeModelListener(ModelChangeEventListener l) {
+	public void removeModelListener(Listener l) {
 		listener.remove(l);
 	}
 
@@ -121,12 +123,12 @@ public class Model {
 	public String generateNodeID(String str) {
 		String text = str;
 		switch (Utility.getTypeFromID(str)) {
-		case Utility.TYPE_CLIENT: {
+		case Utility.TYPE_CONTROLLER: {
 			text = str + clientCount;
 			clientCount++;
 			break;
 		}
-		case Utility.TYPE_SERVER: {
+		case Utility.TYPE_HOST: {
 			text = str + serverCount;
 			serverCount++;
 			break;
@@ -138,6 +140,32 @@ public class Model {
 		}
 		}
 		return text;
+	}
+
+	public boolean dumpToFile() {
+		//TODO: use relative path
+		String fileName = "/home/yixin/info.txt";
+		BufferedWriter out;
+		System.out.println("dumpToFile:");
+		try {
+			out = new BufferedWriter(new FileWriter(fileName));
+
+			for (Iterator<String> it = nodes.keySet().iterator(); it.hasNext();) {
+				String ndID = it.next();
+				out.write("node:" + ndID);
+				out.newLine();
+			}
+			for (Edge e : edges) {
+				out.write("link:" + e.getStartNodeID() + ";" + e.getEndNodeID());
+				out.newLine();
+			}
+			out.close();
+			return true;
+		} catch (IOException e1) {
+			e1.printStackTrace();
+			return false;
+		}
+
 	}
 
 	public class ModelChangeEvent extends Event {
