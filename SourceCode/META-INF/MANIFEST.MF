@@ -8,8 +8,4 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime
 Bundle-ActivationPolicy: lazy
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
-<<<<<<< HEAD
 Import-Package: org.eclipse.ui.forms.widgets
-=======
-Import-Package:org.eclipse.ui.forms.widgets
->>>>>>> 078652b0bfa278d5d75bb125d91b70b9ecb5fb4f
