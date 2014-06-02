@@ -1,8 +1,8 @@
 package ecs240.views;
 
-import java.io.File;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.Iterator;
 
 import org.eclipse.ui.part.*;
 import org.eclipse.ui.forms.widgets.Form;
@@ -20,13 +20,17 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Listener;
 
 import org.eclipse.swt.dnd.*;
+import org.eclipse.swt.events.KeyEvent;
+import org.eclipse.swt.events.KeyListener;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.PaintEvent;
@@ -58,7 +62,13 @@ public class TopologyEditorView extends ViewPart {
 
 	private Section targetSection;
 	private Composite targetArea;
-	private Button button;
+	private Button button0;
+	private Button button1;
+	private Button button2;
+	private Button button3;
+	private Button button4;
+	private String policySelected;
+	private String appSelected;
 	private GC gc;
 
 	private DragSource source;
@@ -72,6 +82,8 @@ public class TopologyEditorView extends ViewPart {
 	private Point startPt;
 	private Point endPt;
 	private Model model;
+	private PyreticThread pyreticthread;
+	private MininetThread mininetthread;
 	ModelChangeEventListener modelListener;
 
 	/**
@@ -107,43 +119,33 @@ public class TopologyEditorView extends ViewPart {
 		sourceArea = toolkit.createComposite(sourceSection, SWT.BORDER);
 		sourceArea.setLayout(new GridLayout());
 
-		// create source area
-		button = toolkit.createButton(sourceArea, "Run", SWT.BORDER);
-		button.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		button.addSelectionListener(new SelectionListener() {
-			public void widgetSelected(SelectionEvent event) {
-				if (model.dumpToFile()) {
-					try {
-						ProcessBuilder pb = new ProcessBuilder().inheritIO();
-						//TODO: use relative path
-						pb.directory(new File(
-								"/home/yixin/workspace/ecs240/src/ecs240/views"));
-						pb.command("gksudo", "python", "MininetRunner.py");
-						Process p = pb.start();
-
-						InputStreamReader streamReader = new InputStreamReader(
-								p.getInputStream());
-						LogStreamReader reader = new LogStreamReader(
-								streamReader);
-						Thread thread = new Thread(reader, "LogStreamReader");
-						thread.start();
-					} catch (Exception e) {
-
-					}
-				}
-			}
-
-			public void widgetDefaultSelected(SelectionEvent event) {
-				this.widgetSelected(event);
-			}
-		});
 		sourceList = new List(sourceArea, SWT.SINGLE | SWT.BORDER
 				| SWT.V_SCROLL);
-		sourceList.setItems(new String[] { Utility.SWITCH, Utility.HOST,
-				Utility.CONTROLLER });
+		sourceList.setItems(new String[] { Utility.SWITCH, Utility.HOST });
 		sourceList.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true,
 				1, 1));
 		sourceSection.setClient(sourceArea);
+
+		button0 = toolkit.createButton(sourceArea, "Load Topo", SWT.BORDER);
+		button0.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		button0.addSelectionListener(new LoadTopoButtonSelection());
+
+		button1 = toolkit.createButton(sourceArea, "Choose Policy", SWT.BORDER);
+		button1.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		button1.addSelectionListener(new PolicyButtonSelection());
+
+		button2 = toolkit.createButton(sourceArea, "Choose Application",
+				SWT.BORDER);
+		button2.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		button2.addSelectionListener(new ApplicationyButtonSelection());
+
+		button3 = toolkit.createButton(sourceArea, "Run", SWT.BORDER);
+		button3.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		button3.addSelectionListener(new RunButtonSelection());
+
+		button4 = toolkit.createButton(sourceArea, "Stop", SWT.BORDER);
+		button4.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		button4.addSelectionListener(new StopButtonSelection());
 
 		// create target area layout
 		targetSection = toolkit
@@ -157,9 +159,10 @@ public class TopologyEditorView extends ViewPart {
 		targetArea.addPaintListener(new PaintListener() {
 			public void paintControl(PaintEvent e) {
 				gc = e.gc;
-				redrawLines(gc);
+				reDraw(gc);
 			}
 		});
+		targetArea.addKeyListener(new NetworkNodeKeyListener());
 
 		// add mouse listener
 		sourceList.addMouseListener(new SourceListMouseListener());
@@ -240,6 +243,7 @@ public class TopologyEditorView extends ViewPart {
 
 		public void dragFinished(DragSourceEvent event) {
 			focusingLabel.dispose();
+			focusingLabel = null;
 		}
 	}
 
@@ -270,12 +274,27 @@ public class TopologyEditorView extends ViewPart {
 								edgeEndLabel.getText(), startPt, endPt);
 						isDrawingEdge = false;
 					}
-
 				}
 			}
 		}
 
 		public void mouseUp(MouseEvent e) {
+		}
+	}
+
+	class NetworkNodeKeyListener implements KeyListener {
+		public void keyPressed(KeyEvent e) {
+			if (e.character == SWT.DEL) {
+				if (focusingLabel != null) {
+					model.deleteNode(focusingLabel.getText());
+					focusingLabel.dispose();
+					focusingLabel = null;
+				}
+			}
+		}
+
+		public void keyReleased(KeyEvent e) {
+
 		}
 	}
 
@@ -334,7 +353,6 @@ public class TopologyEditorView extends ViewPart {
 				Point pt = display.map(null, targetArea, event.x, event.y);
 				model.insertNode(string, pt.x, pt.y);
 			}
-
 		}
 	}
 
@@ -342,49 +360,71 @@ public class TopologyEditorView extends ViewPart {
 
 		public void handleEvent(Event event) {
 			ModelChangeEvent e = (ModelChangeEvent) event;
-			// System.out.println("ModelChangeEventListener,e:" + e.eventType);
 			switch (e.eventType) {
 			case Utility.EVENT_NEW_NODE:
-			case Utility.EVENT_UPDATE_NODE: {
-				if (e.data instanceof Node) {
-					Node nd = (Node) e.data;
-					// System.out.println("nd, id:" + nd.getNodeID() + ", xy:"
-					// + nd.getNodeCoordinates());
-					Image image;
-					image = getImageByKey(nd.getNodeID());
-					Point pt = nd.getNodeCoordinates();
-					if (image != null) {
-						Label label = new Label(targetArea, SWT.NONE);
-
-						FormData data = new FormData();
-						data.top = new FormAttachment(targetArea, pt.y, SWT.TOP);
-						data.left = new FormAttachment(targetArea, pt.x,
-								SWT.LEFT);
-						label.setLayoutData(data);
-						label.setText(nd.getNodeID());
-						label.setImage(image);
-						targetArea.layout(true);
-
-						DragSource dgSrc = new DragSource(label, DND.DROP_MOVE);
-						dgSrc.setTransfer(new Transfer[] { textTransfer });
-						dgSrc.addDragListener(new NetworkNodeDragListener());
-						label.addMouseListener(new NetworkNodeMouseListener());
-						targetArea.redraw();
-					}
-				}
-				break;
-			}
-
+			case Utility.EVENT_UPDATE_NODE:
+			case Utility.EVENT_RELOAD:
+			case Utility.EVENT_DEL_NODE:
 			case Utility.EVENT_NEW_EDGE: {
-				if (e.data instanceof Edge) {
-					Edge edge = (Edge) e.data;
-					gc = new GC(targetArea, SWT.NONE);
-					drawLine(gc, edge.getStartPoint(), edge.getEndPoint());
-					targetArea.redraw();
-					gc.dispose();
+				for (Control control : targetArea.getChildren()) {
+					control.dispose();
 				}
+				targetArea.redraw();
 				break;
 			}
+			// if (e.data instanceof Node) {
+			// Node nd = (Node) e.data;
+			// // System.out.println("nd, id:" + nd.getNodeID() + ", xy:"
+			// // + nd.getNodeCoordinates());
+			// Image image;
+			// image = getImageByKey(nd.getNodeID());
+			// Point pt = nd.getNodeCoordinates();
+			// if (image != null) {
+			// Label label = new Label(targetArea, SWT.NONE);
+			//
+			// FormData data = new FormData();
+			// data.top = new FormAttachment(targetArea, pt.y, SWT.TOP);
+			// data.left = new FormAttachment(targetArea, pt.x,
+			// SWT.LEFT);
+			// label.setLayoutData(data);
+			// label.setText(nd.getNodeID());
+			// label.setImage(image);
+			// targetArea.layout(true);
+			//
+			// DragSource dgSrc = new DragSource(label, DND.DROP_MOVE);
+			// dgSrc.setTransfer(new Transfer[] { textTransfer });
+			// dgSrc.addDragListener(new NetworkNodeDragListener());
+			// label.addMouseListener(new NetworkNodeMouseListener());
+			// label.addKeyListener(new NetworkNodeKeyListener());
+			// targetArea.redraw();
+			// }
+			// }
+			// break;
+			// }
+
+			// case Utility.EVENT_NEW_EDGE: {
+			// if (e.data instanceof Edge) {
+			// Edge edge = (Edge) e.data;
+			// gc = new GC(targetArea, SWT.NONE);
+			// drawLine(gc, edge.getStartPoint(), edge.getEndPoint());
+			// targetArea.redraw();
+			// gc.dispose();
+			// }
+			// break;
+			// }
+			// case Utility.EVENT_DEL_NODE: {
+			// targetArea.redraw();
+			// break;
+			// }
+			// case Utility.EVENT_RELOAD: {
+			// System.out.println("reload");
+			// for (Control control : targetArea.getChildren()) {
+			// System.out.println(control);
+			// control.dispose();
+			// }
+			// targetArea.redraw();
+			// break;
+			// }
 			}
 		}
 	}
@@ -421,11 +461,144 @@ public class TopologyEditorView extends ViewPart {
 		gc.drawLine(start.x + 15, start.y + 15, end.x + 15, end.y + 15);
 	}
 
-	public void redrawLines(GC gc) {
+	public void reDraw(GC gc) {
+		Hashtable<String, Node> nds = model.getNodes();
+		for (Iterator<String> it = nds.keySet().iterator(); it.hasNext();) {
+			Node nd = (Node) nds.get(it.next());
+			Image image;
+			image = getImageByKey(nd.getNodeID());
+			Point pt = nd.getNodeCoordinates();
+			if (image != null) {
+				Label label = new Label(targetArea, SWT.NONE);
+
+				FormData data = new FormData();
+				data.top = new FormAttachment(targetArea, pt.y, SWT.TOP);
+				data.left = new FormAttachment(targetArea, pt.x, SWT.LEFT);
+				label.setLayoutData(data);
+				label.setText(nd.getNodeID());
+				label.setImage(image);
+				targetArea.layout(true);
+
+				DragSource dgSrc = new DragSource(label, DND.DROP_MOVE);
+				dgSrc.setTransfer(new Transfer[] { textTransfer });
+				dgSrc.addDragListener(new NetworkNodeDragListener());
+				label.addMouseListener(new NetworkNodeMouseListener());
+				label.addKeyListener(new NetworkNodeKeyListener());
+				// targetArea.redraw();
+			}
+		}
 		ArrayList<Edge> edges = model.getEdges();
 		for (Edge e : edges) {
 			drawLine(gc, e.getStartPoint(), e.getEndPoint());
-
 		}
 	}
+
+	public class LoadTopoButtonSelection implements SelectionListener {
+		public void widgetSelected(SelectionEvent event) {
+			String loc = Activator.getDefault().getBundle().getLocation();
+			String dir = loc.substring(loc.lastIndexOf(':') + 1)
+					+ "src/ecs240/views";
+			FileDialog dialog = new FileDialog(sourceArea.getShell(), SWT.OPEN);
+			dialog.setFilterExtensions(new String[] { "*.txt" });
+			dialog.setFilterPath(dir);
+			String str = dialog.open();
+			model.loadFromFile(str);
+		}
+
+		public void widgetDefaultSelected(SelectionEvent event) {
+			this.widgetSelected(event);
+		}
+	}
+
+	public class PolicyButtonSelection implements SelectionListener {
+
+		public void widgetSelected(SelectionEvent event) {
+			FileDialog dialog = new FileDialog(sourceArea.getShell(), SWT.OPEN);
+			policySelected = null;
+			dialog.setFilterExtensions(new String[] { "*.py" });
+			dialog.setFilterPath(System.getenv("HOME")
+					+ "/pyretic/pyretic/modules");
+			dialog.open();
+			String str = dialog.getFileName();
+			if (str.endsWith(".py")) {
+				policySelected = "pyretic.modules."
+						+ str.substring(0, str.length() - 3);
+				System.out.println(policySelected);
+			}
+		}
+
+		public void widgetDefaultSelected(SelectionEvent event) {
+			this.widgetSelected(event);
+		}
+
+	}
+
+	public class ApplicationyButtonSelection implements SelectionListener {
+
+		public void widgetDefaultSelected(SelectionEvent event) {
+			this.widgetSelected(event);
+		}
+
+		public void widgetSelected(SelectionEvent arg0) {
+			AppSelectionDialog dialog = new AppSelectionDialog();
+
+			if (dialog.open() == 1)
+				appSelected = dialog.getApp();
+			System.out.println("appselected " + appSelected);
+		}
+	}
+
+	public class RunButtonSelection implements SelectionListener {
+		public void widgetDefaultSelected(SelectionEvent event) {
+			this.widgetSelected(event);
+		}
+
+		public void widgetSelected(SelectionEvent arg0) {
+			model.dumpToFile();
+			try {
+				if (policySelected != null) {
+					System.out.println("******Starting Pyretics");
+					Thread pythread;
+					pyreticthread = new PyreticThread(policySelected);
+					pythread = new Thread(pyreticthread, "PyreticThread");
+					pythread.start();
+				}
+				System.out.println("*****Starting Mininet");
+				Thread mnthread;
+				if (appSelected != null) {
+					mininetthread = new MininetThread(appSelected);
+				} else {
+					mininetthread = new MininetThread();
+				}
+				mnthread = new Thread(mininetthread, "MininetThread");
+				mnthread.start();
+				button3.setEnabled(false);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public class StopButtonSelection implements SelectionListener {
+		public void widgetDefaultSelected(SelectionEvent event) {
+			this.widgetSelected(event);
+		}
+
+		public void widgetSelected(SelectionEvent arg0) {
+			try {
+				// if (pyreticthread != null) {
+				// System.out.println("****** Stopping Pyretic");
+				// pyreticthread.stop();
+				// }
+				if (mininetthread != null) {
+					System.out.println("****** Stopping Mininet");
+					mininetthread.stop();
+				}
+				button3.setEnabled(true);
+			} catch (Exception e) {
+
+			}
+		}
+	}
+
 }

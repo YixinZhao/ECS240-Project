@@ -19,6 +19,8 @@ public final class Utility {// general purpose usage
 	public static final int EVENT_NEW_NODE = 1;
 	public static final int EVENT_UPDATE_NODE = 2;
 	public static final int EVENT_NEW_EDGE = 3;
+	public static final int EVENT_DEL_NODE = 4;
+	public static final int EVENT_RELOAD = 5;
 
 	public static int getTypeFromID(String text) {
 		int type = TYPE_INVALID;

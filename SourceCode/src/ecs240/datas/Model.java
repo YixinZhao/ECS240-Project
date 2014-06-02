@@ -1,6 +1,8 @@
 package ecs240.datas;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -10,6 +12,8 @@ import java.util.Iterator;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
+
+import ecs240.Activator;
 
 public class Model {
 
@@ -66,12 +70,30 @@ public class Model {
 		notifyModelListener(e);
 	}
 
+	public void deleteNode(String id) {
+		System.out.println("delete:" + id);
+		if (isNodeExist(id)) {
+			Iterator<Edge> it = edges.iterator();
+			Edge e;
+			while (it.hasNext()) {
+				e = (Edge) it.next();
+				if (id.equals(e.getStartNodeID())
+						|| id.equals(e.getEndNodeID())) {
+					it.remove();
+				}
+			}
+			nodes.remove(id);
+			ModelChangeEvent event = new ModelChangeEvent();
+			event.eventType = Utility.EVENT_DEL_NODE;
+			notifyModelListener(event);
+		}
+	}
+
 	public boolean isNodeExist(String id) {
 		return nodes.containsKey(id);
 	}
 
 	public void updateNode(String id, int x, int y) {
-		System.out.println("updateNode:" + id + ";" + x + ";" + y);
 		Node nd = nodes.get(id);
 		nd.SetNodeCoordinates(x, y);
 		for (Edge e : edges) {
@@ -116,6 +138,10 @@ public class Model {
 		return edges;
 	}
 
+	public Hashtable<String, Node> getNodes() {
+		return nodes;
+	}
+
 	public Node getNodeByID(String id) {
 		return nodes.get(id);
 	}
@@ -143,8 +169,10 @@ public class Model {
 	}
 
 	public boolean dumpToFile() {
-		//TODO: use relative path
-		String fileName = "/home/yixin/info.txt";
+		String loc = Activator.getDefault().getBundle().getLocation();
+		String dir = loc.substring(loc.lastIndexOf(':') + 1)
+				+ "src/ecs240/views";
+		String fileName = dir + "/info.txt";
 		BufferedWriter out;
 		System.out.println("dumpToFile:");
 		try {
@@ -152,7 +180,9 @@ public class Model {
 
 			for (Iterator<String> it = nodes.keySet().iterator(); it.hasNext();) {
 				String ndID = it.next();
-				out.write("node:" + ndID);
+				out.write("node:" + ndID + ";"
+						+ nodes.get(ndID).getNodeCoordinates().x + ","
+						+ nodes.get(ndID).getNodeCoordinates().y);
 				out.newLine();
 			}
 			for (Edge e : edges) {
@@ -165,7 +195,42 @@ public class Model {
 			e1.printStackTrace();
 			return false;
 		}
+	}
 
+	public void loadFromFile(String file) {
+		BufferedReader in;
+		System.out.println("******loadFromFile:" + file);
+		nodes.clear();
+		edges.clear();
+		try {
+			in = new BufferedReader(new FileReader(file));
+			String line = in.readLine();
+			while (line != null) {
+				if (line.startsWith("node:")) {
+					String ndID = line.substring(line.indexOf(':') + 1,
+							line.indexOf(';'));
+					int x = Integer.parseInt(line.substring(
+							line.indexOf(';') + 1, line.indexOf(',')));
+					int y = Integer
+							.parseInt(line.substring(line.indexOf(',') + 1));
+					nodes.put(ndID, new Node(ndID, x, y));
+				} else if (line.startsWith("link:")) {
+					String start = line.substring(line.indexOf(':') + 1,
+							line.indexOf(';'));
+					String end = line.substring(line.indexOf(';') + 1);
+					Point startpt = nodes.get(start).getNodeCoordinates();
+					Point endpt = nodes.get(end).getNodeCoordinates();
+					Edge e = new Edge(start, end, startpt, endpt);
+					edges.add(e);
+				}
+				line = in.readLine();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		ModelChangeEvent event = new ModelChangeEvent();
+		event.eventType = Utility.EVENT_RELOAD;
+		notifyModelListener(event);
 	}
 
 	public class ModelChangeEvent extends Event {
