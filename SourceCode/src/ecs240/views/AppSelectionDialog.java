@@ -2,7 +2,6 @@ package ecs240.views;
 
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -15,7 +14,7 @@ public class AppSelectionDialog extends MessageDialog {
 	public AppSelectionDialog() {
 		super(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(),
 				"Application Selection", null, "Hello World", SWT.NONE,
-				new String[] { "Cancel", "Done" }, 0);
+				new String[] { "Done", "Cancel" }, 0);
 
 	}
 
@@ -26,13 +25,15 @@ public class AppSelectionDialog extends MessageDialog {
 	protected Control createCustomArea(Composite parent) {
 		combo = new Combo(parent, SWT.DROP_DOWN | SWT.READ_ONLY);
 		combo.setBounds(50, 50, 150, 65);
-		String items[] = { "pingall", "iperf" };
+		String items[] = { "ifconfig", "pingall", "iperfudp", "iperftcp" };
 		combo.setItems(items);
+		combo.setText("ifconfig");
+		
 		return null;
 	}
 
 	protected void buttonPressed(int buttonId) {
-		if (buttonId == 1) {
+		if (buttonId == 0) {
 			selection = combo.getText();
 			System.out.println(selection);
 		}

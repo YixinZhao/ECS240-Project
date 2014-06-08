@@ -31,9 +31,9 @@ public class Model {
 		nodes = new Hashtable<String, Node>();
 		edges = new ArrayList<Edge>();
 		listener = new ArrayList<Listener>();
-		switchCount = 0;
-		clientCount = 0;
-		serverCount = 0;
+		switchCount = 1;
+		clientCount = 1;
+		serverCount = 1;
 	}
 
 	public void addModelListener(Listener l) {
@@ -172,11 +172,14 @@ public class Model {
 		String loc = Activator.getDefault().getBundle().getLocation();
 		String dir = loc.substring(loc.lastIndexOf(':') + 1)
 				+ "src/ecs240/views";
-		String fileName = dir + "/info.txt";
+		String fileName = dir + "/info.topo";
+		return saveToFile(fileName);
+	}
+
+	public boolean saveToFile(String file) {
 		BufferedWriter out;
-		System.out.println("dumpToFile:");
 		try {
-			out = new BufferedWriter(new FileWriter(fileName));
+			out = new BufferedWriter(new FileWriter(file));
 
 			for (Iterator<String> it = nodes.keySet().iterator(); it.hasNext();) {
 				String ndID = it.next();

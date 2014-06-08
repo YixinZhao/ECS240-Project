@@ -1,0 +1,9 @@
+node:switch1;417,111
+node:host3;548,186
+node:switch0;73,54
+node:host1;363,290
+node:host0;175,297
+link:switch0;host0
+link:switch0;host1
+link:switch0;switch1
+link:switch1;host3

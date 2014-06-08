@@ -8,7 +8,7 @@ import org.eclipse.ui.part.*;
 import org.eclipse.ui.forms.widgets.Form;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.Section;
-
+import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
@@ -27,7 +27,6 @@ import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Listener;
-
 import org.eclipse.swt.dnd.*;
 import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.KeyListener;
@@ -63,6 +62,7 @@ public class TopologyEditorView extends ViewPart {
 	private Section targetSection;
 	private Composite targetArea;
 	private Button button0;
+	private Button button00;
 	private Button button1;
 	private Button button2;
 	private Button button3;
@@ -130,12 +130,15 @@ public class TopologyEditorView extends ViewPart {
 		button0.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		button0.addSelectionListener(new LoadTopoButtonSelection());
 
-		button1 = toolkit.createButton(sourceArea, "Choose Policy", SWT.BORDER);
+		button00 = toolkit.createButton(sourceArea, "Save Topo", SWT.BORDER);
+		button00.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		button00.addSelectionListener(new SaveTopoButtonSelection());
+
+		button1 = toolkit.createButton(sourceArea, "Policy", SWT.BORDER);
 		button1.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		button1.addSelectionListener(new PolicyButtonSelection());
 
-		button2 = toolkit.createButton(sourceArea, "Choose Application",
-				SWT.BORDER);
+		button2 = toolkit.createButton(sourceArea, "Application", SWT.BORDER);
 		button2.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		button2.addSelectionListener(new ApplicationyButtonSelection());
 
@@ -372,59 +375,6 @@ public class TopologyEditorView extends ViewPart {
 				targetArea.redraw();
 				break;
 			}
-			// if (e.data instanceof Node) {
-			// Node nd = (Node) e.data;
-			// // System.out.println("nd, id:" + nd.getNodeID() + ", xy:"
-			// // + nd.getNodeCoordinates());
-			// Image image;
-			// image = getImageByKey(nd.getNodeID());
-			// Point pt = nd.getNodeCoordinates();
-			// if (image != null) {
-			// Label label = new Label(targetArea, SWT.NONE);
-			//
-			// FormData data = new FormData();
-			// data.top = new FormAttachment(targetArea, pt.y, SWT.TOP);
-			// data.left = new FormAttachment(targetArea, pt.x,
-			// SWT.LEFT);
-			// label.setLayoutData(data);
-			// label.setText(nd.getNodeID());
-			// label.setImage(image);
-			// targetArea.layout(true);
-			//
-			// DragSource dgSrc = new DragSource(label, DND.DROP_MOVE);
-			// dgSrc.setTransfer(new Transfer[] { textTransfer });
-			// dgSrc.addDragListener(new NetworkNodeDragListener());
-			// label.addMouseListener(new NetworkNodeMouseListener());
-			// label.addKeyListener(new NetworkNodeKeyListener());
-			// targetArea.redraw();
-			// }
-			// }
-			// break;
-			// }
-
-			// case Utility.EVENT_NEW_EDGE: {
-			// if (e.data instanceof Edge) {
-			// Edge edge = (Edge) e.data;
-			// gc = new GC(targetArea, SWT.NONE);
-			// drawLine(gc, edge.getStartPoint(), edge.getEndPoint());
-			// targetArea.redraw();
-			// gc.dispose();
-			// }
-			// break;
-			// }
-			// case Utility.EVENT_DEL_NODE: {
-			// targetArea.redraw();
-			// break;
-			// }
-			// case Utility.EVENT_RELOAD: {
-			// System.out.println("reload");
-			// for (Control control : targetArea.getChildren()) {
-			// System.out.println(control);
-			// control.dispose();
-			// }
-			// targetArea.redraw();
-			// break;
-			// }
 			}
 		}
 	}
@@ -499,10 +449,31 @@ public class TopologyEditorView extends ViewPart {
 			String dir = loc.substring(loc.lastIndexOf(':') + 1)
 					+ "src/ecs240/views";
 			FileDialog dialog = new FileDialog(sourceArea.getShell(), SWT.OPEN);
-			dialog.setFilterExtensions(new String[] { "*.txt" });
+			dialog.setFilterExtensions(new String[] { "*.topo" });
 			dialog.setFilterPath(dir);
 			String str = dialog.open();
-			model.loadFromFile(str);
+			if (str != null) {
+				model.loadFromFile(str);
+			}
+		}
+
+		public void widgetDefaultSelected(SelectionEvent event) {
+			this.widgetSelected(event);
+		}
+	}
+
+	public class SaveTopoButtonSelection implements SelectionListener {
+		public void widgetSelected(SelectionEvent event) {
+			String loc = Activator.getDefault().getBundle().getLocation();
+			String dir = loc.substring(loc.lastIndexOf(':') + 1)
+					+ "src/ecs240/views";
+			FileDialog dialog = new FileDialog(sourceArea.getShell(), SWT.SAVE);
+			dialog.setFilterExtensions(new String[] { "*.topo" });
+			dialog.setFilterPath(dir);
+			String str = dialog.open();
+			if (str != null) {
+				model.saveToFile(str);
+			}
 		}
 
 		public void widgetDefaultSelected(SelectionEvent event) {
@@ -513,18 +484,12 @@ public class TopologyEditorView extends ViewPart {
 	public class PolicyButtonSelection implements SelectionListener {
 
 		public void widgetSelected(SelectionEvent event) {
-			FileDialog dialog = new FileDialog(sourceArea.getShell(), SWT.OPEN);
-			policySelected = null;
-			dialog.setFilterExtensions(new String[] { "*.py" });
-			dialog.setFilterPath(System.getenv("HOME")
-					+ "/pyretic/pyretic/modules");
-			dialog.open();
-			String str = dialog.getFileName();
-			if (str.endsWith(".py")) {
-				policySelected = "pyretic.modules."
-						+ str.substring(0, str.length() - 3);
-				System.out.println(policySelected);
+
+			PolicyEditingDialog dialog = new PolicyEditingDialog();
+			if (IDialogConstants.OK_ID == dialog.open()) {
+				policySelected = dialog.getPolicy();
 			}
+			System.out.println("policySelected " + policySelected);
 		}
 
 		public void widgetDefaultSelected(SelectionEvent event) {
@@ -542,7 +507,7 @@ public class TopologyEditorView extends ViewPart {
 		public void widgetSelected(SelectionEvent arg0) {
 			AppSelectionDialog dialog = new AppSelectionDialog();
 
-			if (dialog.open() == 1)
+			if (dialog.open() == 0)
 				appSelected = dialog.getApp();
 			System.out.println("appselected " + appSelected);
 		}
@@ -586,13 +551,13 @@ public class TopologyEditorView extends ViewPart {
 
 		public void widgetSelected(SelectionEvent arg0) {
 			try {
-				// if (pyreticthread != null) {
-				// System.out.println("****** Stopping Pyretic");
-				// pyreticthread.stop();
+				// if (mininetthread != null) {
+				// System.out.println("****** Stopping Mininet");
+				// mininetthread.stop();
 				// }
-				if (mininetthread != null) {
-					System.out.println("****** Stopping Mininet");
-					mininetthread.stop();
+				if (pyreticthread != null) {
+					System.out.println("****** Stopping Pyretic");
+					pyreticthread.stop();
 				}
 				button3.setEnabled(true);
 			} catch (Exception e) {

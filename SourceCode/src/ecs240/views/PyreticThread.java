@@ -14,7 +14,7 @@ public class PyreticThread implements Runnable {
 
 	public void run() {
 		try {
-			//Runtime.getRuntime().exec("pkill -SIGINT pyretic");
+			// Runtime.getRuntime().exec("pkill -SIGINT pyretic");
 			pb = new ProcessBuilder().inheritIO();
 			pb.command("pyretic.py", pyreticModule);
 			pyretic = pb.start();
@@ -35,7 +35,7 @@ public class PyreticThread implements Runnable {
 		if (pyretic != null) {
 			try {
 				Runtime.getRuntime().exec("pkill -SIGINT pyretic");
-				pyretic.destroy();
+
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

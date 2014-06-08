@@ -1,4 +1,5 @@
 import os
+import re
 
 from mininet.log import info, error, debug, output, setLogLevel
 from mininet.net import Mininet, VERSION
@@ -7,7 +8,6 @@ from mininet.node import CPULimitedHost, Host, Node
 from mininet.node import OVSKernelSwitch, OVSSwitch, UserSwitch
 from mininet.link import TCLink, Intf, Link
 from mininet.topo import Topo
-
 
 from mininet.clean import cleanup
 from mininet.cli import CLI
@@ -19,8 +19,12 @@ from mininet.node import (Host, CPULimitedHost, Controller, OVSController,
 from mininet.link import Link, TCLink
 from mininet.topo import SingleSwitchTopo, LinearTopo, SingleSwitchReversedTopo
 from mininet.topolib import TreeTopo
-from mininet.util import custom, customConstructor
-from mininet.util import buildTopo
+from mininet.util import custom, customConstructor, dumpNodeConnections
+from mininet.util import buildTopo, quietRun
+
+from mininet.examples.multitest import ifconfigTest
+
+from time import sleep
 
 print 'running against MiniNet ' + VERSION
 
@@ -31,7 +35,7 @@ class MininetTopo(Topo):
     def __init__(self, parent=None):
         super(MininetTopo, self).__init__()
         
-        self.my_filename = os.getcwd() + '/info.txt'
+        self.my_filename = os.getcwd() + '/info.topo'
         self.my_nodes = []
         self.my_links = {}
         self.fd = None
@@ -67,6 +71,7 @@ class MininetTopo(Topo):
                 semipos = line.find(';')
                 src = line[commapos + 1:semipos ]
                 dst = line[semipos + 1:-1]
+                print "(" + src + "," + dst + ")"
                 self.addLink(node1=src, node2=dst)
                 self.my_links[src] = dst
         self.fd.close()
@@ -132,13 +137,12 @@ LINKS = { 'default': Link,
 
 
 # optional tests to run
-TESTS = [ 'cli', 'build', 'pingall', 'pingpair', 'iperf', 'all', 'iperfudp',
-          'none' ]
+TESTS = [ 'pingall', 'iperfudp', 'iperftcp', 'ifconfig']
 
-ALTSPELLING = { 'pingall': 'pingAll',
-                'pingpair': 'pingPair',
-                'iperfudp': 'iperfUdp',
-                'iperfUDP': 'iperfUdp' }
+ALTSPELLING = { 'pingall': 'pingall',
+                'iperfudp': 'iperfudp',
+                'ifconfig': 'ifconfig',
+                'iperftcp':'iperftcp'}
 
 
 def addDictOption(opts, choicesDict, default, name, helpStr=None):
@@ -328,18 +332,20 @@ class MininetRunner(object):
         test = ALTSPELLING.get(test, test)
 
         mn.start()
+        print "*** network built:"
+        dumpNodeConnections(mn.values())
 
-        if test == 'none':
-            pass
-        elif test == 'all':
-            mn.start()
+        if test == 'pingall':
             mn.ping()
-            mn.iperf()
-        elif test == 'cli':
-            CLI(mn)
-        elif test != 'build':
-            getattr(mn, test)()
-
+        elif test == 'iperfudp':
+            iperf(mn)
+        elif test == 'iperftcp':
+            iperf(mn, 'TCP')
+        elif test == 'ifconfig':
+            ifconfigTest(mn)
+        else:
+            pass
+        
         if self.options.post:
             CLI(mn, script=self.options.post)
 
@@ -348,6 +354,57 @@ class MininetRunner(object):
         elapsed = float(time.time() - start)
         info('completed in %0.3f seconds\n' % elapsed)
 
+def iperf(net, l4Type='UDP', udpBw='10M'):
+    for node in net.hosts:
+        for dest in net.hosts:
+            if node != dest:
+                hosts = [ node, dest ]
+                client, server = hosts
+                output('*** Iperf: testing ' + l4Type + ' bandwidth between ')
+                output("%s and %s\n" % (client.name, server.name))
+                server.cmd('killall -9 iperf')
+                iperfArgs = 'iperf '
+                bwArgs = ''
+                if l4Type == 'UDP':
+                    iperfArgs += '-u '
+                    bwArgs = '-b ' + udpBw + ' '
+                elif l4Type != 'TCP':
+                    raise Exception('Unexpected l4 type: %s' % l4Type)
+                server.sendCmd(iperfArgs + '-s', printPid=True)
+                servout = ''
+                while server.lastPid is None:
+                    servout += server.monitor()
+                if l4Type == 'TCP':
+                    counttried = 0
+                    while 'Connected' not in client.cmd(
+                            'sh -c "echo A | telnet -e A %s 5001"' % server.IP()):
+                        print('waiting for iperf to start up...')
+                        sleep(.5)
+                        counttried = counttried + 1
+                        if(counttried == 4):
+                            break
+                cliout = client.cmd(iperfArgs + '-t 5 -c ' + server.IP() + ' ' + 
+                                     bwArgs)
+                debug('Client output: %s\n' % cliout)
+                server.sendInt()
+                servout += server.waitOutput()
+                debug('Server output: %s\n' % servout)
+                result = [ parseIperf(servout), parseIperf(cliout) ]
+                if l4Type == 'UDP':
+                    result.insert(0, udpBw)
+                output('*** Results: %s\n' % result)
+        return result
+    
+def parseIperf(iperfOutput):
+
+        r = r'([\d\.]+ \w+/sec)'
+        m = re.findall(r, iperfOutput)
+        if m:
+            return m[-1]
+        else:
+            # was: raise Exception(...)
+            output(iperfOutput)
+            return ''
 
 if __name__ == "__main__":
     MininetRunner()
